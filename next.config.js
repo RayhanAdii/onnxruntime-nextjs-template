@@ -4,23 +4,23 @@ const CopyPlugin = require("copy-webpack-plugin");
 
 module.exports = {
   reactStrictMode: true,
-  //distDir: 'build',
-  webpack: (config, {  }) => {
-
+  webpack: (config, {}) => {
     config.resolve.extensions.push(".ts", ".tsx");
     config.resolve.fallback = { fs: false };
 
     config.plugins.push(
-    new NodePolyfillPlugin(), 
-    new CopyPlugin({
-      patterns: [
-        {
-          from: './node_modules/onnxruntime-web/dist/ort-wasm.wasm',
-          to: 'static/chunks/pages',
-        },             {
-          from: './node_modules/onnxruntime-web/dist/ort-wasm-simd.wasm',
-          to: 'static/chunks/pages',
-        },          
+      new NodePolyfillPlugin(), 
+      new CopyPlugin({
+        patterns: [
+          // Copy ALL WASM files from onnxruntime-web
+          {
+            from: './node_modules/onnxruntime-web/dist/*.wasm',
+            to: 'static/chunks/pages/[name][ext]',
+          },
+          {
+            from: './node_modules/onnxruntime-web/dist/*.mjs',
+            to: 'static/chunks/pages/[name][ext]',
+          },
           {
             from: './model',
             to: 'static/chunks/pages',

@@ -2,13 +2,34 @@ import * as ort from 'onnxruntime-web';
 import _ from 'lodash';
 import { imagenetClasses } from '../data/imagenet';
 
-export async function runSqueezenetModel(preprocessedData: any): Promise<[any, number]> {
+// Configure ONNX Runtime Web BEFORE any session creation
+let isConfigured = false;
+
+function configureORT() {
+  if (isConfigured || typeof window === 'undefined') return;
   
-  // Create session and set options. See the docs here for more options: 
-  //https://onnxruntime.ai/docs/api/js/interfaces/InferenceSession.SessionOptions.html#graphOptimizationLevel
+  // Set WASM paths
+  ort.env.wasm.wasmPaths = '/_next/static/chunks/pages/';
+  
+  // Try single-threaded first (most compatible)
+  ort.env.wasm.numThreads = 1;
+  ort.env.wasm.simd = true;
+  
+  isConfigured = true;
+  console.log('ONNX Runtime configured for WASM');
+}
+
+export async function runSqueezenetModel(preprocessedData: any): Promise<[any, number]> {
+  // Configure ORT before creating session
+  configureORT();
+  
+  // Create session with WASM execution provider (CPU backend)
   const session = await ort.InferenceSession
-                          .create('./_next/static/chunks/pages/squeezenet1_1.onnx', 
-                          { executionProviders: ['webgl'], graphOptimizationLevel: 'all' });
+                          .create('/_next/static/chunks/pages/squeezenet1_1.onnx', 
+                          { 
+                            executionProviders: ['wasm'],
+                            graphOptimizationLevel: 'all'
+                          });
   console.log('Inference session created')
   // Run inference and get results.
   var [results, inferenceTime] =  await runInference(session, preprocessedData);
@@ -70,4 +91,3 @@ export function imagenetClassesTopK(classProbabilities: any, k = 5) {
   });
   return topK;
 }
-
